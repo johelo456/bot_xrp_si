@@ -217,6 +217,7 @@ def webhook():
     # Para webhook futuro
     return "OK"
 
+# Función principal modificada
 def main():
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     
@@ -228,12 +229,9 @@ def main():
     print("🚀 Bot iniciado con diálogo inteligente!")
     print("💬 Ahora puede conversar con usuarios")
     
-    # Para Render.com, usar webhook o polling
-    try:
-        application.run_polling()
-    except:
-        # Fallback para Render
-        app.run(host='0.0.0.0', port=5000)
+    # Iniciar polling
+    application.run_polling()
 
+# Esto es importante para Render
 if __name__ == "__main__":
     main()
