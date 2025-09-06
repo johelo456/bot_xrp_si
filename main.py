@@ -1,10 +1,10 @@
 import os
 import logging
+import random
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 import requests
 from openai import OpenAI
-from flask import Flask
 
 # Configurar logging
 logging.basicConfig(
@@ -145,6 +145,34 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(welcome_message, reply_markup=reply_markup, parse_mode='Markdown')
 
+# Comando /price
+async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    precio = get_xrp_price()
+    if precio:
+        precio_cop = precio * 3900
+        await update.message.reply_text(f"💎 *Precio XRP:*\n\n{precio:.4f} USD\n{precio_cop:,.0f} COP\n\n💡 ¿Quieres análisis? Usa /analysis", parse_mode='Markdown')
+    else:
+        await update.message.reply_text("❌ Error obteniendo precio.")
+
+# Comando /analysis
+async def analysis(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("📈 *Analizando XRP...*", parse_mode='Markdown')
+    precio = get_xrp_price()
+    if precio:
+        analisis = f"""
+📊 *Análisis Rápido de XRP*
+
+• *Precio:* {precio:.4f} USD
+• *Tendencia:* {'📈 Alcista' if precio > 0.58 else '📉 Bajista'}
+• *Recomendación:* {'✅ Buena compra' if precio < 0.6 else '⚠️ Esperar'}
+
+*Para inversiones de 80K-200K COP:* 
+XRP es buena opción. También considera ADA o MATIC.
+"""
+        await update.message.reply_text(analisis, parse_mode='Markdown')
+    else:
+        await update.message.reply_text("❌ Error obteniendo datos para análisis.")
+
 # Manejar todos los mensajes de texto
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -152,28 +180,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Comandos de botones
     if text == "💰 Precio XRP":
-        precio = get_xrp_price()
-        if precio:
-            precio_cop = precio * 3900
-            await update.message.reply_text(f"💰 *XRP:* {precio:.4f} USD\n*≈* {precio_cop:,.0f} COP", parse_mode='Markdown')
-        else:
-            await update.message.reply_text("❌ No pude obtener el precio ahora.")
+        await price(update, context)
     
     elif text == "📊 Análisis":
-        await update.message.reply_text("🔍 *Analizando XRP...*", parse_mode='Markdown')
-        precio = get_xrp_price()
-        if precio:
-            analisis = f"""
-📊 *Análisis Rápido de XRP*
-
-• *Precio:* {precio:.4f} USD
-• *Tendencia:* {'📈 Alcista' if precio > 0.58 else '📉 Bajista'}
-• *Recomendación:* {'✅ Buena compra' if precio < 0.6 else ⚠️ Esperar'}
-
-*Para inversiones de 80K-200K COP:* 
-XRP es buena opción. También considera ADA o MATIC.
-"""
-            await update.message.reply_text(analisis, parse_mode='Markdown')
+        await analysis(update, context)
     
     elif text == "💬 Conversar":
         await update.message.reply_text("💬 ¡Claro! Puedes preguntarme sobre:\n• Precios de cripto\n• Estrategias de inversión\n• Noticias del mercado\n• Análisis técnico\n\n¿En qué te ayudo?")
@@ -192,32 +202,7 @@ XRP es buena opción. También considera ADA o MATIC.
         respuesta = await manejar_dialogo(update, context, text)
         await update.message.reply_text(respuesta)
 
-# Comandos tradicionales
-async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    precio = get_xrp_price()
-    if precio:
-        precio_cop = precio * 3900
-        await update.message.reply_text(f"💎 *Precio XRP:*\n\n{precio:.4f} USD\n{precio_cop:,.0f} COP\n\n💡 ¿Quieres análisis? Usa /analysis", parse_mode='Markdown')
-    else:
-        await update.message.reply_text("❌ Error obteniendo precio.")
-
-async def analysis(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("📈 *Analizando XRP...*", parse_mode='Markdown')
-    # Tu código de análisis aquí
-
-# Configuración Flask para Render
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "🤖 XRP Bot está funcionando!"
-
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    # Para webhook futuro
-    return "OK"
-
-# Función principal modificada
+# Función principal
 def main():
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     
@@ -232,6 +217,6 @@ def main():
     # Iniciar polling
     application.run_polling()
 
-# Esto es importante para Render
+# Punto de entrada
 if __name__ == "__main__":
     main()
