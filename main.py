@@ -6,9 +6,6 @@ import requests
 from openai import OpenAI
 from flask import Flask
 
-# Importar configuración
-from config import TELEGRAM_TOKEN, OPENAI_API_KEY
-
 # Configurar logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -16,12 +13,32 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-if not TELEGRAM_TOKEN:
-    print("Error: Token de Telegram no configurado")
-    exit()
+# Obtener tokens de variables de entorno (Render) o archivos (local)
+TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
-# Configurar OpenAI
+# Si estamos en local y no hay variables de entorno, leer de archivos
+if not TELEGRAM_TOKEN:
+    try:
+        with open('telegram_token.txt', 'r') as f:
+            TELEGRAM_TOKEN = f.read().strip()
+    except:
+        print("ERROR: No se encontró TELEGRAM_TOKEN")
+        exit()
+
+if not OPENAI_API_KEY:
+    try:
+        with open('openai_key.txt', 'r') as f:
+            OPENAI_API_KEY = f.read().strip()
+    except:
+        print("Advertencia: No se encontró OPENAI_API_KEY")
+        # No salir, el bot puede funcionar sin OpenAI para algunas funciones
+
+# Configurar OpenAI si existe la key
 client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+
+print("✅ Configuración cargada correctamente")
+print("📍 Entorno:", "Render" if os.environ.get('TELEGRAM_TOKEN') else "Local")
 
 # Estado de conversación
 conversaciones = {}
